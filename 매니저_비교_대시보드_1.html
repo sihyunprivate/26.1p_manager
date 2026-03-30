@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>매니저 평가 비교 대시보드</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: #f5f4f0;
+    color: #1a1a1a;
+    padding: 32px 24px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: #111;
+    letter-spacing: -0.3px;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1.5px solid #d0cec8;
+    background: #fff;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .tab:hover { border-color: #999; color: #333; }
+  .tab.active {
+    background: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+  }
+
+  /* SECTIONS */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* TOP METRICS */
+  .top-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .metric {
+    background: #fff;
+    border: 1.5px solid #e0deda;
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .metric-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .metric-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -0.5px;
+  }
+  .metric-value.muted { color: #aaa; }
+
+  /* CARDS */
+  .cards-grid {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .card {
+    background: #fff;
+    border: 1.5px solid #e0deda;
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #888;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* BARS */
+  .rows { display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .row-label {
+    font-size: 13px;
+    color: #555;
+    width: 42px;
+    text-align: right;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+  .track {
+    flex: 1;
+    background: #f0ede8;
+    border-radius: 6px;
+    overflow: hidden;
+    height: 32px;
+    display: flex;
+    align-items: stretch;
+  }
+  .fill {
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    min-width: fit-content;
+  }
+  .fill.up   { background: #1D9E75; }
+  .fill.down { background: #E24B4A; }
+  .fill.same { background: #a0a09a; }
+  .row-total {
+    font-size: 12px;
+    color: #aaa;
+    width: 56px;
+    text-align: right;
+    flex-shrink: 0;
+    font-weight: 500;
+  }
+
+  /* STACKED BARS (overview) */
+  .stacked-track {
+    flex: 1;
+    border-radius: 6px;
+    overflow: hidden;
+    height: 34px;
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    background: #f0ede8;
+  }
+  .stacked-fill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    white-space: nowrap;
+    padding: 0 8px;
+  }
+  .stacked-fill.up   { background: #1D9E75; }
+  .stacked-fill.down { background: #E24B4A; }
+  .stacked-fill.same { background: #a0a09a; }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #555;
+    font-weight: 500;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* SUMMARY CARD */
+  .summary-card {
+    background: #f5f4f0;
+    border: 1.5px solid #e0deda;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-top: 4px;
+  }
+  .sum-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #888;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .sum-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 14px;
+    border-bottom: 1px solid #e0deda;
+  }
+  .sum-row:last-child { border-bottom: none; }
+  .sum-key { color: #555; font-weight: 500; }
+  .sum-val { font-weight: 700; font-size: 14px; }
+  .sum-val.up   { color: #1D9E75; }
+  .sum-val.down { color: #E24B4A; }
+
+  /* NOTE */
+  .note {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 10px;
+    font-style: italic;
+  }
+
+  /* OVERVIEW section label */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #bbb;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 20px 0 10px;
+  }
+  .section-label:first-child { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<h1>매니저 평가 비교 대시보드</h1>
+
+<div class="tabs">
+  <button class="tab active" onclick="show('overview', this)">전체 요약</button>
+  <button class="tab" onclick="show('v46', this)">4.6 비교</button>
+  <button class="tab" onclick="show('v453', this)">4.5~4.3 비교</button>
+  <button class="tab" onclick="show('v42', this)">4.2 비교</button>
+</div>
+
+<!-- ===================== 전체 요약 ===================== -->
+<div id="overview" class="section active">
+
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot" style="background:#1D9E75"></span>상승</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#E24B4A"></span>감소</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#a0a09a"></span>동일</span>
+  </div>
+
+  <div class="section-label">Good 점수 — 버전별 비교</div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="rows">
+      <div class="row">
+        <span class="row-label">4.6</span>
+        <div class="stacked-track">
+          <div class="stacked-fill up"    style="flex:70">상승 70</div>
+          <div class="stacked-fill down"  style="flex:74">감소 74</div>
+          <div class="stacked-fill same"  style="flex:6">6</div>
+        </div>
+        <span class="row-total">총 150명</span>
+      </div>
+      <div class="row">
+        <span class="row-label">4.5~3</span>
+        <div class="stacked-track">
+          <div class="stacked-fill up"    style="flex:15">상승 15</div>
+          <div class="stacked-fill down"  style="flex:22">감소 22</div>
+          <div class="stacked-fill same"  style="flex:3">3</div>
+        </div>
+        <span class="row-total">총 40명</span>
+      </div>
+      <div class="row">
+        <span class="row-label">4.2</span>
+        <div class="stacked-track">
+          <div class="stacked-fill up"    style="flex:20">상승 20</div>
+          <div class="stacked-fill down"  style="flex:11">감소 11</div>
+          <div class="stacked-fill same"  style="flex:1">1</div>
+        </div>
+        <span class="row-total">총 32명</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Bad 점수 — 버전별 비교</div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="rows">
+      <div class="row">
+        <span class="row-label">4.6</span>
+        <div class="stacked-track">
+          <div class="stacked-fill down"  style="flex:45">상승 45</div>
+          <div class="stacked-fill up"    style="flex:84">감소 84</div>
+          <div class="stacked-fill same"  style="flex:21">동일 21</div>
+        </div>
+        <span class="row-total">총 150명</span>
+      </div>
+      <div class="row">
+        <span class="row-label">4.5~3</span>
+        <div class="stacked-track">
+          <div class="stacked-fill down"  style="flex:12">상승 12</div>
+          <div class="stacked-fill up"    style="flex:26">감소 26</div>
+          <div class="stacked-fill same"  style="flex:2">2</div>
+        </div>
+        <span class="row-total">총 40명</span>
+      </div>
+      <div class="row">
+        <span class="row-label">4.2</span>
+        <div class="stacked-track">
+          <div class="stacked-fill down"  style="flex:4">상승 4</div>
+          <div class="stacked-fill up"    style="flex:27">감소 27</div>
+          <div class="stacked-fill same"  style="flex:1">1</div>
+        </div>
+        <span class="row-total">총 32명</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Bad_top 점수 — 버전별 비교 <span style="font-size:11px;color:#ccc;font-weight:400;text-transform:none;">(4.5~4.3, 4.2 시트만 해당)</span></div>
+  <div class="card">
+    <div class="rows">
+      <div class="row">
+        <span class="row-label">4.5~3</span>
+        <div class="stacked-track">
+          <div class="stacked-fill down"  style="flex:4">상승 4</div>
+          <div class="stacked-fill up"    style="flex:34">감소 34</div>
+          <div class="stacked-fill same"  style="flex:2">2</div>
+        </div>
+        <span class="row-total">총 40명</span>
+      </div>
+      <div class="row">
+        <span class="row-label">4.2</span>
+        <div class="stacked-track">
+          <div class="stacked-fill down"  style="flex:4">상승 4</div>
+          <div class="stacked-fill up"    style="flex:28">감소 28</div>
+          <div class="stacked-fill same"  style="flex:1">1</div>
+        </div>
+        <span class="row-total">총 33명</span>
+      </div>
+    </div>
+    <div class="note">* bad_top: 가장 빈번한 불만 유형의 건수 평균</div>
+  </div>
+
+</div>
+
+<!-- ===================== 4.6 비교 ===================== -->
+<div id="v46" class="section">
+
+  <div class="top-grid">
+    <div class="metric">
+      <div class="metric-label">총 인원</div>
+      <div class="metric-value">160명</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">비교 불가(매치 없음)</div>
+      <div class="metric-value muted">10명</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">실 비교 인원</div>
+      <div class="metric-value">150명</div>
+    </div>
+  </div>
+
+  <div class="cards-grid" style="grid-template-columns:1fr 1fr;">
+    <div class="card">
+      <div class="card-title">Good 점수</div>
+      <div class="rows">
+        <div class="row">
+          <span class="row-label">상승</span>
+          <div class="track"><div class="fill up" style="width:46.7%">70명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">감소</span>
+          <div class="track"><div class="fill down" style="width:49.3%">74명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">동일</span>
+          <div class="track"><div class="fill same" style="width:4%">6명</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bad 점수</div>
+      <div class="rows">
+        <div class="row">
+          <span class="row-label">상승</span>
+          <div class="track"><div class="fill down" style="width:30%">45명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">감소</span>
+          <div class="track"><div class="fill up" style="width:56%">84명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">동일</span>
+          <div class="track"><div class="fill same" style="width:14%">21명</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-card">
+    <div class="sum-title">Sum 행 요약 (전체 합산 기준)</div>
+    <div class="sum-row"><span class="sum-key">good 합계</span><span class="sum-val down">감소</span></div>
+    <div class="sum-row"><span class="sum-key">bad 합계</span><span class="sum-val down">감소</span></div>
+  </div>
+
+</div>
+
+<!-- ===================== 4.5~4.3 비교 ===================== -->
+<div id="v453" class="section">
+
+  <div class="top-grid">
+    <div class="metric">
+      <div class="metric-label">총 인원</div>
+      <div class="metric-value">45명</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">비교 불가(매치 없음)</div>
+      <div class="metric-value muted">5명</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">실 비교 인원</div>
+      <div class="metric-value">40명</div>
+    </div>
+  </div>
+
+  <div class="cards-grid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="card">
+      <div class="card-title">Good 점수</div>
+      <div class="rows">
+        <div class="row">
+          <span class="row-label">상승</span>
+          <div class="track"><div class="fill up" style="width:37.5%">15명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">감소</span>
+          <div class="track"><div class="fill down" style="width:55%">22명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">동일</span>
+          <div class="track"><div class="fill same" style="width:7.5%">3명</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bad 점수</div>
+      <div class="rows">
+        <div class="row">
+          <span class="row-label">상승</span>
+          <div class="track"><div class="fill down" style="width:30%">12명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">감소</span>
+          <div class="track"><div class="fill up" style="width:65%">26명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">동일</span>
+          <div class="track"><div class="fill same" style="width:5%">2명</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bad_top 점수</div>
+      <div class="rows">
+        <div class="row">
+          <span class="row-label">상승</span>
+          <div class="track"><div class="fill down" style="width:10%">4명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">감소</span>
+          <div class="track"><div class="fill up" style="width:85%">34명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">동일</span>
+          <div class="track"><div class="fill same" style="width:5%">2명</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-card">
+    <div class="sum-title">Sum 행 요약 (전체 합산 기준)</div>
+    <div class="sum-row"><span class="sum-key">good 합계</span><span class="sum-val down">감소</span></div>
+    <div class="sum-row"><span class="sum-key">bad 합계</span><span class="sum-val down">감소</span></div>
+    <div class="sum-row"><span class="sum-key">bad_top 합계</span><span class="sum-val down">감소</span></div>
+  </div>
+
+</div>
+
+<!-- ===================== 4.2 비교 ===================== -->
+<div id="v42" class="section">
+
+  <div class="top-grid">
+    <div class="metric">
+      <div class="metric-label">총 인원</div>
+      <div class="metric-value">39명</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">비교 불가(매치 없음)</div>
+      <div class="metric-value muted">7명</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">실 비교 인원</div>
+      <div class="metric-value">32명</div>
+    </div>
+  </div>
+
+  <div class="cards-grid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="card">
+      <div class="card-title">Good 점수</div>
+      <div class="rows">
+        <div class="row">
+          <span class="row-label">상승</span>
+          <div class="track"><div class="fill up" style="width:62.5%">20명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">감소</span>
+          <div class="track"><div class="fill down" style="width:34.4%">11명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">동일</span>
+          <div class="track"><div class="fill same" style="width:3.1%">1명</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bad 점수</div>
+      <div class="rows">
+        <div class="row">
+          <span class="row-label">상승</span>
+          <div class="track"><div class="fill down" style="width:12.5%">4명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">감소</span>
+          <div class="track"><div class="fill up" style="width:84.4%">27명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">동일</span>
+          <div class="track"><div class="fill same" style="width:3.1%">1명</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Bad_top 점수</div>
+      <div class="rows">
+        <div class="row">
+          <span class="row-label">상승</span>
+          <div class="track"><div class="fill down" style="width:12.1%">4명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">감소</span>
+          <div class="track"><div class="fill up" style="width:84.8%">28명</div></div>
+        </div>
+        <div class="row">
+          <span class="row-label">동일</span>
+          <div class="track"><div class="fill same" style="width:3.1%">1명</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-card">
+    <div class="sum-title">Sum 행 요약 (전체 합산 기준)</div>
+    <div class="sum-row"><span class="sum-key">good 합계</span><span class="sum-val up">상승</span></div>
+    <div class="sum-row"><span class="sum-key">bad 합계</span><span class="sum-val down">감소</span></div>
+    <div class="sum-row"><span class="sum-key">bad_top 합계</span><span class="sum-val down">감소</span></div>
+  </div>
+
+</div>
+
+<script>
+function show(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+
+</body>
+</html>
